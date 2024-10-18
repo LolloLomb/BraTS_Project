@@ -7,7 +7,10 @@ from torch.utils.data import DataLoader                 # To create a DataLoader
 from sklearn.preprocessing import MinMaxScaler          # To impose which class we want to accept as input for crop_and_save
 from unet import UNet3D                                 # To create an instance of the 3D UNet model
 from dice_loss import DiceLoss                          # To measure the overlap between predicted and true masks
+from focal_loss import FocalLoss                        # Class balancing loss
+from combined_loss import CombinedLoss                  # Combine Loss
 from lightning.pytorch.callbacks import ModelCheckpoint # To save training checkpoints
+from lightning.pytorch.callbacks import EarlyStopping   # To stop
 from lightning import Trainer                           # To train the model
 # from torch.optim.adamw import AdamW # It is used by default in my 3D UNet
 
@@ -58,20 +61,34 @@ def main():
     
     train_loader, val_loader = step_two(batch_size)  # Create training and validation loaders
 
-    loss_fx = DiceLoss(classes=4)  # Instantiate the Dice Loss function with 4 classes
+    loss_fx = CombinedLoss(
+        dice_loss=DiceLoss(classes=4),
+        focal_loss=FocalLoss(gamma=2.0),
+        dice_weight=0.5,
+        focal_weight=0.5
+    )
+
     model = step_three(loss_fx)  # Create an instance of the UNet model
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',  # Monitor the validation loss
-        dirpath='checkpoints/',  # Directory to save the checkpoints
-        filename='best-model',  # Filename for the best model
-        save_top_k=1,  # Save only the best model
-        mode='min'  # Minimize the monitored quantity
+        monitor='val_loss',  
+        dirpath='checkpoints/',  
+        filename='best-model-{epoch:02d}-{val_accuracy:.2f}',
+        save_top_k=1,  
+        mode='min'
     )
+
+    early_stopping_callback = EarlyStopping(
+        monitor='val_loss', 
+        patience=10, 
+        mode='min' 
+    )
+
+
 
     trainer = Trainer(
         max_epochs=max_epochs,  # Set maximum epochs for training
-        callbacks=[checkpoint_callback],  # Include the checkpoint callback
+        callbacks=[checkpoint_callback, early_stopping_callback],  # Include the checkpoint callback
         devices='auto',  # Automatically choose devices (CPU or GPU)
         accelerator='gpu'  # Use CPU for training
     )

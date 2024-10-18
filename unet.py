@@ -87,6 +87,11 @@ class UNet3D(L.LightningModule):
         self.train_jaccard = JaccardIndex(task='multiclass', num_classes=out_channels)
         self.val_jaccard = JaccardIndex(task='multiclass', num_classes=out_channels)
 
+        # Lists to store metrics
+        self.dice_values = []
+        self.val_accuracy_values = []
+        self.jaccard_values = []
+
     # Forward pass of the model
     def forward(self, x):
         x = x.permute(0, 4, 1, 2, 3)  # Transpose to [batch_size, channels, depth, height, width]
@@ -137,6 +142,20 @@ class UNet3D(L.LightningModule):
         self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=True)
         self.log('val_accuracy', self.val_accuracy, on_step=True, on_epoch=True, prog_bar=True)
         self.log('val_jaccard', self.val_jaccard, on_step=True, on_epoch=True, prog_bar=True)
+
+        # Save values at the end of validation step
+        self.val_accuracy_values.append(self.val_accuracy.compute())  # Append accuracy
+        self.jaccard_values.append(self.val_jaccard.compute())      # Append Jaccard index
+        self.dice_values.append(loss.item())                        # Append loss (Dice + Focal)
+
+        # Reset metrics for next validation step
+        self.val_accuracy.reset()
+        self.val_jaccard.reset()
+
+        print("Val Accuracy ", self.val_accuracy_values)
+        print("Dice ", self.dice_values)
+        print("Jaccard ", self.jaccard_values)
+
         return loss
 
     # Count the total number of parameters in the model
