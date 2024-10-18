@@ -16,4 +16,5 @@ class CombinedLoss(torch.nn.Module):
 
         # Combina le due perdite usando i pesi
         combined_loss = self.dice_weight * dice + self.focal_weight * focal
+        #return combined_loss
         return combined_loss

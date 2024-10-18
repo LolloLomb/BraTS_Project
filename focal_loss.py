@@ -21,6 +21,12 @@ class FocalLoss(torch.nn.Module):
         if self.alpha is not None:
             # Assicurati che alpha sia un tensor
             alpha_tensor = torch.tensor(self.alpha).to(inputs.device)
-            F_loss = F_loss * alpha_tensor[targets]  # Applica il peso della classe
+            targets = targets.long()
+            alpha_weights = (alpha_tensor).unsqueeze(0).unsqueeze(2).unsqueeze(3).unsqueeze(4)
+            print(alpha_weights.shape, F_loss.shape)
+            F_loss = F_loss * alpha_weights  # Applica il peso della classe
+       
+        loss_per_sample = F_loss.mean(dim=(2,3,4))
+        loss_per_class = loss_per_sample.mean(dim=0)
 
-        return F_loss.mean()
+        return loss_per_class

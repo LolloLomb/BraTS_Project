@@ -124,7 +124,7 @@ class UNet3D(L.LightningModule):
         x, y = batch
         y_out = self.forward(x)
         y = y.permute(0, 4, 1, 2, 3)  # Cambia l'ordine delle dimensioni
-        loss = self.loss_fx(y_out, y)
+        loss = self.loss_fx(y_out, y).mean()
         
         # Update and log metrics
         self.train_accuracy(y_out, y)
@@ -139,7 +139,7 @@ class UNet3D(L.LightningModule):
         x, y = batch
         y_out = self.forward(x)
         y = y.permute(0, 4, 1, 2, 3)  # Cambia l'ordine delle dimensioni
-        loss = self.loss_fx(y_out, y)
+        loss = self.loss_fx(y_out, y).mean()
         
         # Update and log metrics
         self.val_accuracy(y_out, y)

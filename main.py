@@ -22,8 +22,8 @@ CHECK_TRAIN_LOADER = False  # Flag to enable/disable the train loader check
 
 learning_rate = 0.0001       # Learning rate for the optimizer
 batch_size = 4              # Batch size for training
-max_epochs = 3              # Maximum number of epochs for training
-num_workers = 8
+max_epochs = 100              # Maximum number of epochs for training
+num_workers = 254
 
 def step_one(dir, scaler):
     # For each type of data: T2, T1CE, FLAIR with the respective segmented area
@@ -104,7 +104,7 @@ def main():
 
     # Start the fitting process
 
-    #trainer.fit(model, train_loader, val_loader)    
+    trainer.fit(model, train_loader, val_loader)    
 
 
 # Entry point of the script
