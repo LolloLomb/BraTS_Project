@@ -59,6 +59,8 @@ class UNet3D(L.LightningModule):
         super().__init__()
         self.loss_fx = loss_fx
         self.learning_rate = learning_rate
+        self.in_channels = in_channels
+        self.out_channels = out_channels
 
         # Define the encoder blocks
         self.encoder1 = EncoderBlock(in_channels, 16, 0.1)
@@ -88,6 +90,9 @@ class UNet3D(L.LightningModule):
         self.val_jaccard = JaccardIndex(task='multiclass', num_classes=out_channels)
 
         # Lists to store metrics
+        self.dice_values_step = []
+        self.val_accuracy_values_step = []
+        self.jaccard_values_step = []
         self.dice_values = []
         self.val_accuracy_values = []
         self.jaccard_values = []
@@ -144,19 +149,26 @@ class UNet3D(L.LightningModule):
         self.log('val_jaccard', self.val_jaccard, on_step=True, on_epoch=True, prog_bar=True)
 
         # Save values at the end of validation step
-        self.val_accuracy_values.append(self.val_accuracy.compute())  # Append accuracy
-        self.jaccard_values.append(self.val_jaccard.compute())      # Append Jaccard index
-        self.dice_values.append(loss.item())                        # Append loss (Dice + Focal)
-
-        # Reset metrics for next validation step
-        self.val_accuracy.reset()
-        self.val_jaccard.reset()
-
-        print("Val Accuracy ", self.val_accuracy_values)
-        print("Dice ", self.dice_values)
-        print("Jaccard ", self.jaccard_values)
+        if self.trainer.state.stage != "sanity_check":
+            self.val_accuracy_values_step.append(self.val_accuracy.compute().item())  # Append accuracy
+            self.jaccard_values_step.append(self.val_jaccard.compute().item())      # Append Jaccard index
+            self.dice_values_step.append(loss.item())                        # Append loss (Dice + Focal loss)
 
         return loss
+
+    def on_validation_epoch_end(self):
+        if self.trainer.state.stage != "sanity_check":
+            self.val_accuracy_values.append(sum(self.val_accuracy_values_step)/len(self.val_accuracy_values_step))
+            print(self.val_accuracy_values_step)
+            print(self.val_accuracy_values)
+            self.jaccard_values.append(sum(self.jaccard_values_step)/len(self.jaccard_values_step))
+            self.dice_values.append(sum(self.dice_values_step)/len(self.dice_values_step))
+
+        self.val_accuracy_values_step.clear()
+        self.jaccard_values_step.clear()
+        self.dice_values_step.clear()
+
+        print(f"Val Acc: {self.val_accuracy_values}, jaccard: {self.jaccard_values}, dice: {self.dice_values}")
 
     # Count the total number of parameters in the model
     def count_parameters(self):
@@ -171,3 +183,4 @@ class UNet3D(L.LightningModule):
     def configure_optimizers(self):
         optim = torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
         return optim
+    

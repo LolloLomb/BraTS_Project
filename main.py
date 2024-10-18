@@ -14,11 +14,16 @@ from lightning.pytorch.callbacks import EarlyStopping   # To stop
 from lightning import Trainer                           # To train the model
 # from torch.optim.adamw import AdamW # It is used by default in my 3D UNet
 
+
+import matplotlib.pyplot as plt
+
+
 CHECK_TRAIN_LOADER = False  # Flag to enable/disable the train loader check
 
-learning_rate = 0.001       # Learning rate for the optimizer
-batch_size = 1              # Batch size for training
-max_epochs = 1              # Maximum number of epochs for training
+learning_rate = 0.0001       # Learning rate for the optimizer
+batch_size = 4              # Batch size for training
+max_epochs = 3              # Maximum number of epochs for training
+num_workers = 8
 
 def step_one(dir, scaler):
     # For each type of data: T2, T1CE, FLAIR with the respective segmented area
@@ -42,9 +47,9 @@ def step_two(batch_size):
 
     # Removed drop_last = True to try using all available volumes
     train_set = BratsDataset('input_data_128_split/train')  # Instantiate training dataset
-    train_loader = DataLoader(train_set, batch_size, shuffle=True, num_workers=0)  # Create training DataLoader
+    train_loader = DataLoader(train_set, batch_size, shuffle=True, num_workers=num_workers)  # Create training DataLoader
     val_set = BratsDataset('input_data_128_split/val')  # Instantiate validation dataset
-    val_loader = DataLoader(val_set, batch_size, shuffle=False, num_workers=0)  # Create validation DataLoader
+    val_loader = DataLoader(val_set, batch_size, shuffle=False, num_workers=num_workers)  # Create validation DataLoader
 
     if CHECK_TRAIN_LOADER:  # Check if train loader check is enabled
         check_train_loader(train_loader)  # Debug the training DataLoader
@@ -54,7 +59,11 @@ def step_two(batch_size):
 def step_three(loss_fx):
     return UNet3D(3, 4, loss_fx, learning_rate)  # Instantiate the 3D UNet model with input channels, output classes, loss function, and learning rate
 
+
 def main():
+
+    checkpoint_path = "checkpoints/best-model-epoch=02-val_accuracy=0.97.ckpt"
+
     # dir = 'new2024/BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData'
     # Uncomment the line below to execute step one with the specified directory and a MinMaxScaler
     # step_one(dir, scaler=MinMaxScaler())
@@ -62,8 +71,8 @@ def main():
     train_loader, val_loader = step_two(batch_size)  # Create training and validation loaders
 
     loss_fx = CombinedLoss(
-        dice_loss=DiceLoss(classes=4),
-        focal_loss=FocalLoss(gamma=2.0),
+        dice_loss=DiceLoss(classes=4, weights=[1, 419, 40,151]),
+        focal_loss=FocalLoss(alpha=[0.001699, 0.686999, 0.064999, 0.2463], gamma=2.0),
         dice_weight=0.5,
         focal_weight=0.5
     )
@@ -71,11 +80,11 @@ def main():
     model = step_three(loss_fx)  # Create an instance of the UNet model
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_loss',  
+        monitor='val_accuracy',  
         dirpath='checkpoints/',  
         filename='best-model-{epoch:02d}-{val_accuracy:.2f}',
-        save_top_k=1,  
-        mode='min'
+        save_top_k=3,  
+        mode='max'
     )
 
     early_stopping_callback = EarlyStopping(
@@ -94,7 +103,9 @@ def main():
     )
 
     # Start the fitting process
-    trainer.fit(model, train_loader, val_loader)
+
+    #trainer.fit(model, train_loader, val_loader)    
+
 
 # Entry point of the script
 if __name__ == '__main__':
