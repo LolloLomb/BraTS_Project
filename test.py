@@ -85,19 +85,7 @@ def checkpoint_loader(checkpoint_path):
 
 def main():
 
-    # Frequenze delle classi
-    occurrences = [2025401, 4996, 52828, 13927]  # Conteggio delle classi
-    total_count = sum(occurrences)
-
-    # Calcola le frequenze relative e i pesi
-    class_weights = [total_count / count for count in occurrences]
-    class_weights = [weight / sum(class_weights) for weight in class_weights]  # Normalizza i pesi
-
-    # Stampa i pesi per verifica
-    print("Pesi per la Focal Loss:", class_weights)
-    return
-
-    checkpoint_path = "checkpoints/best-model-epoch=02-val_accuracy=0.97.ckpt"
+    checkpoint_path = "checkpoints/best-model-epoch=50-val_accuracy=0.80.ckpt"
     model = checkpoint_loader(checkpoint_path)
 
     _, val_loader = step_two(1)

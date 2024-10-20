@@ -23,7 +23,6 @@ class FocalLoss(torch.nn.Module):
             alpha_tensor = torch.tensor(self.alpha).to(inputs.device)
             targets = targets.long()
             alpha_weights = (alpha_tensor).unsqueeze(0).unsqueeze(2).unsqueeze(3).unsqueeze(4)
-            print(alpha_weights.shape, F_loss.shape)
             F_loss = F_loss * alpha_weights  # Applica il peso della classe
        
         loss_per_sample = F_loss.mean(dim=(2,3,4))

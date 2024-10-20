@@ -159,8 +159,6 @@ class UNet3D(L.LightningModule):
     def on_validation_epoch_end(self):
         if self.trainer.state.stage != "sanity_check":
             self.val_accuracy_values.append(sum(self.val_accuracy_values_step)/len(self.val_accuracy_values_step))
-            print(self.val_accuracy_values_step)
-            print(self.val_accuracy_values)
             self.jaccard_values.append(sum(self.jaccard_values_step)/len(self.jaccard_values_step))
             self.dice_values.append(sum(self.dice_values_step)/len(self.dice_values_step))
 

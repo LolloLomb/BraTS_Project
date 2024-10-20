@@ -4,3 +4,6 @@
 /__pycache__/
 /input_data_128_split/
 /checkpoints
+
+plot_results.py
+results.json
