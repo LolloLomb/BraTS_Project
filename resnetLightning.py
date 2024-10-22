@@ -7,14 +7,17 @@ import torch.nn as nn
 class ResidualUNet3D_Lightning(pl.LightningModule):
     def __init__(self, in_channels, out_channels, loss_fn = None):
         super().__init__()
-        self.model = ResidualUNet3D(in_channels=3, out_channels=4)
-        self.loss_fn = nn.CrossEntropyLoss()
-        self.dice_metric = MulticlassF1Score(average='none', num_classes=4)
+        self.model = ResidualUNet3D(in_channels=in_channels, out_channels=out_channels)
+        self.loss_fn = nn.CrossEntropyLoss() if loss_fn == None else loss_fn
+        # Studiare come funziona la metric seguente e come gestire i logits tornati torch.argmax(preds, dim=1) prima di passarlo alla metrica
+        # Introdurre lo scheduler di learning rate
+        self.dice_metric = MulticlassF1Score(average='none', num_classes=out_channels)
     
     def forward(self, x):
         return self.model(x)
     
     def training_step(self, batch, batch_idx):
+        # Controllare dimensioni di images e labels
         images, labels = batch
         preds = self(images)
         loss = self.loss_fn(preds, labels)

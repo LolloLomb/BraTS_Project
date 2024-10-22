@@ -1,6 +1,3 @@
-/Data Augmentation for Brain-Tumor Segmentation_ A Review - PMC.html
-/Brain Viewer Webapp.html
-
 /__pycache__/
 /input_data_128_split/
 /checkpoints
@@ -9,3 +6,4 @@ plot_results.py
 results.json
 
 struttura_tesi.txt
+appunti.txt
