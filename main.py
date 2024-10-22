@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 CHECK_TRAIN_LOADER = False  # Flag to enable/disable the train loader check
 
 learning_rate = 0.0001       # Learning rate for the optimizer
-batch_size = 4              # Batch size for training
+batch_size = 1               # Batch size for training
 max_epochs = 100              # Maximum number of epochs for training
-num_workers = 254
+num_workers = 7
 
 def step_one(dir, scaler):
     # For each type of data: T2, T1CE, FLAIR with the respective segmented area
@@ -57,7 +57,11 @@ def step_two(batch_size):
     return train_loader, val_loader  # Return the training and validation loaders
 
 def step_three(loss_fx):
+    from resnetLightning import ResidualUNet3D_Lightning
+    return ResidualUNet3D_Lightning(3, 4)
+
     return UNet3D(3, 4, loss_fx, learning_rate)  # Instantiate the 3D UNet model with input channels, output classes, loss function, and learning rate
+
 
 
 def main():
@@ -71,10 +75,10 @@ def main():
     train_loader, val_loader = step_two(batch_size)  # Create training and validation loaders
 
     loss_fx = CombinedLoss(
-        dice_loss=DiceLoss(classes=4, weights=[1, 419, 40,151]),
+        dice_loss=DiceLoss(classes=4, weights=[0.001699, 0.686999, 0.064999, 0.2463]),
         focal_loss=FocalLoss(alpha=[0.001699, 0.686999, 0.064999, 0.2463], gamma=2.0),
-        dice_weight=0.5,
-        focal_weight=0.5
+        dice_weight=0.3,
+        focal_weight=0.7
     )
 
     model = step_three(loss_fx)  # Create an instance of the UNet model
@@ -96,8 +100,8 @@ def main():
 
 
     trainer = Trainer(
-        max_epochs=max_epochs,  # Set maximum epochs for training
-        callbacks=[checkpoint_callback, early_stopping_callback],  # Include the checkpoint callback
+        max_epochs=1,  # Set maximum epochs for training
+        #callbacks=[checkpoint_callback, early_stopping_callback],  # Include the checkpoint callback
         devices='auto',  # Automatically choose devices (CPU or GPU)
         accelerator='gpu'  # Use CPU for training
     )

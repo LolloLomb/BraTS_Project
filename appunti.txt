@@ -4,6 +4,12 @@ Tipo di immagini:
     T2, permette di vedere i liquidi, quindi le zone interessate da edèmi e infiammazioni (che sono reazioni biologiche)
     FLAIR, Fluid Attenuated Inversion Recovery, simile alla T2 ma sopprime il segnale del liquido cefalorachidiano, che permette la diffusione di sostanze nutrienti dal sangue alle cellule nervose
 
+Labels:
+    0: senza etichetta
+    1: nucleo tumorale necrotico, crescita incontrollata senza nutrienti (non si illumina col contrasto perchè non è vascolarizzata)
+    2: edema peritumorale (accumulo di liquido causato da una infiammazione, intensa in t2 e flair, alterazione del tessuto cerebrale circostante)
+    3: tumore attivo
+
 STEP ONE:
     Unico step di preprocessing delle immagini
     Inizialmente i percorsi vengono caricati con glob, ogni campione è 240x240x155 e pesa circa 160 megabyte (di cui 17 per la mask)
