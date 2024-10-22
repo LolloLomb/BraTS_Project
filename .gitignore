@@ -3,6 +3,7 @@
 /checkpoints
 
 plot_results.py
+test.py
 results.json
 
 struttura_tesi.txt
