@@ -12,7 +12,6 @@ class ResNetLightning(pl.LightningModule):
         self.model = ResNet(in_channels=in_channels, out_channels=out_channels)
         self.apply(self.init_weights)
 
-
     def forward(self, x):
         return self.model(x)
     
@@ -20,10 +19,10 @@ class ResNetLightning(pl.LightningModule):
         images, labels = batch
         predictions = self(images)
         # Calcolo della loss
-        dice_loss = Metrics.dice_loss(predictions, labels)
+        total_loss = Metrics.combined_loss(predictions, labels)
         # Log
-        self.log("train_loss", dice_loss)
-        return dice_loss
+        self.log("train_loss", total_loss)
+        return total_loss
 
     def validation_step(self, batch):
         images, labels = batch
@@ -34,14 +33,14 @@ class ResNetLightning(pl.LightningModule):
         hausdorff = Metrics.hausdorff_distance(predictions, labels)
         acc = Metrics.accuracy(predictions, labels)
         jaccard = Metrics.jaccard_index(predictions, labels)
-        dice_loss = Metrics.dice_loss(predictions, labels)
+        total_loss = Metrics.combined_loss(predictions, labels)
 
         # Log
         self.log('val_dice', dice)
         self.log('val_hausdorff', hausdorff)
         self.log('val_accuracy', acc)
         self.log('val_jaccard', jaccard)
-        self.log('val_dice_loss', dice_loss)
+        self.log('val_loss', total_loss)
     
     def configure_optimizers(self):
         # Prima definisco l'optimizer
