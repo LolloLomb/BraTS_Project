@@ -166,7 +166,7 @@ class UNet3D(L.LightningModule):
         self.jaccard_values_step.clear()
         self.dice_values_step.clear()
 
-        print(f"Val Acc: {self.val_accuracy_values}, jaccard: {self.jaccard_values}, dice: {self.dice_values}")
+        print(f"Val Acc: {self.val_accuracy_values}\n, jaccard: {self.jaccard_values}\n, dice: {self.dice_values}\n")
 
     # Count the total number of parameters in the model
     def count_parameters(self):

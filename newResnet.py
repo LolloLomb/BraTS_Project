@@ -32,8 +32,7 @@ class ResNet(nn.Module):
         self.upResConv3 = ResConv(64 + 32, 32, 1, 1, dropout=0.1)
 
         self.outputLayer = nn.Sequential(
-            nn.Conv3d(in_channels=32, out_channels=out_channels, kernel_size=1, stride=1),
-            nn.Softmax(dim = 1)
+            nn.Conv3d(in_channels=32, out_channels=out_channels, kernel_size=1, stride=1)
         )
 
 
@@ -62,10 +61,11 @@ class ResNet(nn.Module):
         x9 = torch.cat([x8, x1], dim=1)
         x10 = self.upResConv3(x9)
 
-        output = self.outputLayer(x10)
+        x10 = self.outputLayer(x10)
 
-        return output
+        probabilities = torch.softmax(x10, dim=1)
 
+        return probabilities
 
 
 class Upsample(nn.Module):

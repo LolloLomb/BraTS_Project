@@ -12,12 +12,22 @@ class ResNetLightning(pl.LightningModule):
         self.model = ResNet(in_channels=in_channels, out_channels=out_channels)
         self.apply(self.init_weights)
 
+        self.dice_values_step = []
+        self.val_accuracy_values_step = []
+        self.jaccard_values_step = []
+        self.dice_values = []
+        self.val_accuracy_values = []
+        self.jaccard_values = []
+
     def forward(self, x):
         return self.model(x)
     
     def training_step(self, batch):
         images, labels = batch
         predictions = self(images)
+        
+        labels = labels.permute(0, 4, 1, 2, 3)
+
         # Calcolo della loss
         total_loss = Metrics.combined_loss(predictions, labels)
         # Log
@@ -27,20 +37,30 @@ class ResNetLightning(pl.LightningModule):
     def validation_step(self, batch):
         images, labels = batch
         predictions = self(images)
-
+        # Dentro predictions ci finisce il risultato della softmax su quel batch, devo debuggare
+        labels = labels.permute(0, 4, 1, 2, 3)
+        
         # Calcolo della loss
         dice = Metrics.dice_coefficient(predictions, labels)
-        hausdorff = Metrics.hausdorff_distance(predictions, labels)
+        #hausdorff = Metrics.hausdorff_distance(predictions, labels)
         acc = Metrics.accuracy(predictions, labels)
         jaccard = Metrics.jaccard_index(predictions, labels)
         total_loss = Metrics.combined_loss(predictions, labels)
 
         # Log
         self.log('val_dice', dice)
-        self.log('val_hausdorff', hausdorff)
+        #self.log('val_hausdorff', hausdorff)
         self.log('val_accuracy', acc)
         self.log('val_jaccard', jaccard)
         self.log('val_loss', total_loss)
+        
+        # Save values at the end of validation step
+        if self.trainer.state.stage != "sanity_check":
+            self.val_accuracy_values_step.append(acc)  # Append accuracy
+            self.jaccard_values_step.append(jaccard)      # Append Jaccard index
+            self.dice_values_step.append(total_loss)                        # Append loss (Dice + Focal loss)
+
+        return total_loss
     
     def configure_optimizers(self):
         # Prima definisco l'optimizer
@@ -52,6 +72,19 @@ class ResNetLightning(pl.LightningModule):
             'lr_scheduler': scheduler,
             'monitor': 'train_loss'
         }
+
+    def on_validation_epoch_end(self):
+        if self.trainer.state.stage != "sanity_check":
+            self.val_accuracy_values.append(sum(self.val_accuracy_values_step)/len(self.val_accuracy_values_step))
+            self.jaccard_values.append(sum(self.jaccard_values_step)/len(self.jaccard_values_step))
+            self.dice_values.append(sum(self.dice_values_step)/len(self.dice_values_step))
+
+        self.val_accuracy_values_step.clear()
+        self.jaccard_values_step.clear()
+        self.dice_values_step.clear()
+
+        print(f"Val Acc: {self.val_accuracy_values}, jaccard: {self.jaccard_values}, dice: {self.dice_values}")
+
         
     def count_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad) 

@@ -29,7 +29,7 @@ def main():
 
     trainer = Trainer(
         max_epochs=max_epochs,  # Set maximum epochs for training
-        #callbacks=[checkpoint_callback, early_stopping_callback],  # Include the checkpoint callback
+        callbacks=[checkpoint_callback, early_stopping_callback],  # Include the checkpoint callback
         devices='auto',  # Automatically choose devices (CPU or GPU)
         accelerator='gpu',  # Use CPU for training
         precision='16-mixed'
