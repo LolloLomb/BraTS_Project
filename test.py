@@ -2,6 +2,7 @@ from step_two import step_two
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
+from newResnetLightning import ResNetLightning
 
 
 def test_sample(model, val_loader, slice_index=64):  # Modifica per accettare un index di slice
@@ -46,14 +47,17 @@ def test_sample(model, val_loader, slice_index=64):  # Modifica per accettare un
     for value in range(4):  # Intervallo da 0 a 3
         print(f"Valore {value}: {counts_true[value].item()} occorrenze")
 
+    input("Press any key to plot\n")
+
     # Stampa la slice specificata
-    plot_slices(y_pred_argmax[0, :, slice_index], true_mask_argmax[0, :, slice_index])  # Passa la slice desiderata
+    save_slices(y_pred_argmax[0, :, slice_index], true_mask_argmax[0, :, slice_index], "test1")  # Passa la slice desiderata
 
 
 
 
-def plot_slices(pred_slice, true_slice):
-    # Visualizza le maschere e le previsioni
+def save_slices(pred_slice, true_slice, file_name):
+    # Crea la figura
+    import os
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
 
     # Visualizza la maschera vera
@@ -66,27 +70,36 @@ def plot_slices(pred_slice, true_slice):
     axs[1].set_title("Maschera Predetta")
     axs[1].axis('off')
 
-    plt.show()
+    # Salva la figura nella cartella corrente
+    save_path = os.path.join(os.getcwd(), f"{file_name}.png")
+    plt.savefig(save_path)
+
+    flat_tensor_true = torch.tensor(pred_slice).flatten()  # Crea un tensore da numpy e appiattisci
+    counts_true = torch.bincount(flat_tensor_true.long())  # Usa .long() per convertire in tipo Long
+    for value in range(4):  # Intervallo da 0 a 3
+        print(f"Valore {value}: {counts_true[value].item()} occorrenze")
+
+    # Chiude la figura per liberare memoria
+    plt.close(fig)
+
 
 def checkpoint_loader(checkpoint_path):
-        # Carica il modello dal checkpoint
-        model = UNet3D.load_from_checkpoint(checkpoint_path, 
-                                            in_channels=3, 
-                                            out_channels=4, 
-                                            loss_fx=CombinedLoss,
-                                            learning_rate=learning_rate)
-        model.to("cuda")
-        print(f"\nCheckpoint caricato da {checkpoint_path}")
-        return model
+    # Carica il modello dal checkpoint
+    model = ResNetLightning.load_from_checkpoint(checkpoint_path, 
+                                        in_channels=3, 
+                                        out_channels=4)
+    model.to("cuda")
+    print(f"\nCheckpoint caricato da {checkpoint_path}")
+    return model
 
 
 
 def main():
 
-    checkpoint_path = "checkpoints/best-model-epoch=50-val_accuracy=0.80.ckpt"
+    checkpoint_path = "best-model-epoch=30-val_jaccard=0.54.ckpt"
     model = checkpoint_loader(checkpoint_path)
 
-    _, val_loader = step_two(1)
+    _, val_loader = step_two(test = True)
     test_sample(model, val_loader, slice_index=64)  # Passa l'indice della slice che desideri visualizzare
 
 

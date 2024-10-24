@@ -8,6 +8,65 @@ lossWeights = [ 0.001636661,
                 0.247140576]
 
 class Metrics:
+
+    @staticmethod
+    def precision(prediction, target, epsilon=1e-6):
+        """
+        Calcola la Precision per la segmentazione.
+        """
+        prediction = (prediction > 0.5).float()  # Binarizza la predizione
+        target = target.float()
+
+        true_positive = (prediction * target).sum()
+        predicted_positive = prediction.sum()
+
+        precision = (true_positive + epsilon) / (predicted_positive + epsilon)
+        return precision
+
+    @staticmethod
+    def recall(prediction, target, epsilon=1e-6):
+        """
+        Calcola la Recall per la segmentazione.
+        """
+        prediction = (prediction > 0.5).float()  # Binarizza la predizione
+        target = target.float()
+
+        true_positive = (prediction * target).sum()
+        actual_positive = target.sum()
+
+        recall = (true_positive + epsilon) / (actual_positive + epsilon)
+        return recall
+
+    @staticmethod
+    def f1_score(prediction, target, epsilon=1e-6, weights=lossWeights):
+        """
+        Calcola l'F1-Score per la segmentazione.
+        """
+        num_classes = prediction.shape[1]
+    
+        # Se i pesi non sono specificati, assegna peso uguale a tutte le classi
+        if weights is None:
+            weights = [1.0] * num_classes
+            
+        class_f1_scores = []
+    
+        # Calcola precision e recall per ciascuna classe
+        for class_idx in range(num_classes):
+            pred_class = prediction[:, class_idx, ...]
+            target_class = target[:, class_idx, ...]
+            
+            precision = Metrics.precision(pred_class, target_class, epsilon)
+            recall = Metrics.recall(pred_class, target_class, epsilon)
+            
+            # Calcola F1-Score per la classe corrente
+            f1 = 2 * (precision * recall) / (precision + recall + epsilon)
+            
+            # Applica il peso alla classe corrente
+            class_f1_scores.append(f1 * weights[class_idx])
+    
+        # Restituisci la media pesata degli F1-Score di tutte le classi
+        return sum(class_f1_scores) / sum(weights)
+    
     @staticmethod
     def dice_loss(prediction, target, weights=lossWeights, epsilon=1e-6):
         """
@@ -131,12 +190,30 @@ class Metrics:
         return correct / target.numel()
 
     @staticmethod
-    def jaccard_index(prediction, target, epsilon=1e-6):
-        """
-        Calcola l'indice di Jaccard.
-        """
-        intersection = (prediction * target).sum()
-        union = prediction.sum() + target.sum() - intersection
-        return (intersection + epsilon) / (union + epsilon)
-
-
+    def jaccard_index(prediction, target, weights=lossWeights, epsilon=1e-6):
+    
+        num_classes = prediction.shape[1]
+        
+        # Se i pesi non sono specificati, assegna peso uguale a tutte le classi
+        if weights is None:
+            weights = [1.0] * num_classes
+    
+        class_jaccard_scores = []
+    
+        # Calcolo dell'indice di Jaccard per ciascuna classe
+        for class_idx in range(num_classes):
+            pred_class = prediction[:, class_idx, ...]
+            target_class = target[:, class_idx, ...]
+            
+            # Calcolo intersezione e unione
+            intersection = (pred_class * target_class).sum()
+            union = pred_class.sum() + target_class.sum() - intersection
+            
+            # Calcolo Jaccard per la classe corrente
+            jaccard = (intersection + epsilon) / (union + epsilon)
+            
+            # Applica il peso alla classe corrente
+            class_jaccard_scores.append(jaccard * weights[class_idx])
+    
+        # Restituisci la media pesata dei Jaccard di tutte le classi
+        return sum(class_jaccard_scores) / sum(weights)

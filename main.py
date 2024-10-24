@@ -12,10 +12,10 @@ def main():
     model = ResNetLightning(3, 4)  # Create an instance of the ResNet3D Model
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_accuracy',  
+        monitor='val_jaccard',  
         dirpath='checkpoints/',  
-        filename='best-model-{epoch:02d}-{val_accuracy:.2f}',
-        save_top_k=3,  
+        filename='best-model-{epoch:02d}-{val_jaccard:.2f}',
+        save_top_k=2,  
         mode='max'
     )
 

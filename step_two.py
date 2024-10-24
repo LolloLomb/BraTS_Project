@@ -4,7 +4,7 @@ from check_train_loader import check_train_loader       # For debugging the trai
 
 CHECK_TRAIN_LOADER = False  # Flag to enable/disable the train loader check
 
-def step_two():
+def step_two(test = False):
     # Construct tensor Datasets for the training set and validation set
     # Obtain DataLoaders from the two Datasets
 
@@ -15,7 +15,7 @@ def step_two():
     train_set = BratsDataset('input_data_128_split/train')  # Instantiate training dataset
     train_loader = DataLoader(train_set, batch_size, shuffle=True, num_workers=num_workers)  # Create training DataLoader
     val_set = BratsDataset('input_data_128_split/val')  # Instantiate validation dataset
-    val_loader = DataLoader(val_set, batch_size, shuffle=False, num_workers=num_workers)  # Create validation DataLoader
+    val_loader = DataLoader(val_set, batch_size, shuffle=test, num_workers=num_workers)  # Create validation DataLoader
 
     if CHECK_TRAIN_LOADER:  # Check if train loader check is enabled
         check_train_loader(train_loader)  # Debug the training DataLoader
