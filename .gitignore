@@ -2,9 +2,13 @@
 /input_data_128_split/
 /checkpoints
 
-plot_results.py
 test.py
-results.json
 
 struttura_tesi.txt
 appunti.txt
+
+plot.py
+getLog.py
+
+jaccard_f1_scores_combined.png
+loss_scores.png

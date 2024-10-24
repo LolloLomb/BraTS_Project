@@ -11,4 +11,6 @@ with open("/home/lorenzo/Scrivania/Progetto_Pannone/new2024/resultsNew.txt") as 
             scores["f1"].append(float(i[14:19]))
 
     for i in scores.keys():
-        print(i, len(scores[i]))
+        print(i, end= " ")
+        for l in scores[i]:
+            print(l)
