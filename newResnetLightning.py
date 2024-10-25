@@ -11,8 +11,10 @@ class ResNetLightning(pl.LightningModule):
         super().__init__()
         
         torch.set_float32_matmul_precision('medium')
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         
-        self.model = ResNet(in_channels=in_channels, out_channels=out_channels)
+        self.model = ResNet(in_channels=in_channels, out_channels=out_channels).to('cuda')
         self.apply(self.init_weights)
 
         self.jaccard_step = []
@@ -24,11 +26,6 @@ class ResNetLightning(pl.LightningModule):
         self.f1score_step = []
         self.f1score_epoch = []
 
-        self.precision_step = []
-        self.precision_epoch = []
-        self.recall_step = []
-        self.recall_epoch = []
-
         self.hausdorff_step = []
         self.hausdorff_epoch = []
 
@@ -37,6 +34,8 @@ class ResNetLightning(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         images, labels = batch
+        images.to('cuda')
+        labels.to('cuda')
         predictions = self(images)
         
         labels = labels.permute(0, 4, 1, 2, 3)
@@ -50,6 +49,8 @@ class ResNetLightning(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         images, labels = batch
+        images.to('cuda')
+        labels.to('cuda')
         predictions = self(images)
 
         labels = labels.permute(0, 4, 1, 2, 3)
@@ -57,25 +58,19 @@ class ResNetLightning(pl.LightningModule):
         # Calcolo delle metriche
         dice = Metrics.dice_coefficient(predictions, labels)
         jaccard = Metrics.jaccard_index(predictions, labels)
-        precision = Metrics.precision(predictions, labels)
-        recall = Metrics.recall(predictions, labels)
         f1score = Metrics.f1_score(predictions, labels)
         total_loss = Metrics.combined_loss(predictions, labels)
 
         # Accumula i valori per l'epoca corrente
         if self.trainer.state.stage != "sanity_check":
-            self.jaccard_step.append(jaccard.item())
-            self.precision_step.append(precision.item())
-            self.recall_step.append(recall.item())
-            self.f1score_step.append(f1score.item())
-            self.total_loss_step.append(total_loss.item())
+            self.jaccard_step.append(jaccard)
+            self.f1score_step.append(f1score)
+            self.total_loss_step.append(total_loss)
 
         # Log delle metriche
-        self.log('val_dice', dice, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('val_jaccard', jaccard, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('val_precision', precision, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('val_recall', recall, on_step=True, on_epoch=True, prog_bar=True)
-        self.log('val_f1score', f1score, on_step=True, on_epoch=True, prog_bar=True)
+        #self.log('val_dice', dice, on_step=True, on_epoch=True, prog_bar=True)
+        #self.log('val_jaccard', jaccard, on_step=True, on_epoch=True, prog_bar=True)
+        #self.log('val_f1score', f1score, on_step=True, on_epoch=True, prog_bar=True)
         self.log('val_loss', total_loss, on_step=True, on_epoch=True, prog_bar=True)
 
         return total_loss
@@ -83,34 +78,48 @@ class ResNetLightning(pl.LightningModule):
     def on_validation_epoch_end(self):
         # Calcolo delle medie alla fine dell'epoca
         if self.trainer.state.stage != "sanity_check":
+            print("\n\n")
+            current_jaccards = []
+            current_f1score = []
+            for i in range(self.out_channels):
+                s = sum(lst[i] for lst in self.jaccard_step)
+                avg = len(self.jaccard_step)
+                current_jaccards.append(s/avg)
+            self.jaccard_epoch.append(current_jaccards)
+            print("Jaccard: ", self.jaccard_epoch)
+
+            for i in range(self.out_channels):
+                s = sum(lst[i] for lst in self.f1score_step)
+                avg = len(self.f1score_step)
+                current_f1score.append(s/avg)
+            self.f1score_epoch.append(current_f1score)
+            
+            print("Score: ", self.f1score_epoch)
+            self.jaccard_step.clear()
+            self.f1score_step.clear()
+            self.free_memory()
+        '''
+        if self.trainer.state.stage != "sanity_check":
             avg_jaccard = sum(self.jaccard_step) / len(self.jaccard_step)
-            avg_precision = sum(self.precision_step) / len(self.precision_step)
-            avg_recall = sum(self.recall_step) / len(self.recall_step)
             avg_f1score = sum(self.f1score_step) / len(self.f1score_step)
             avg_loss = sum(self.total_loss_step) / len(self.total_loss_step)
     
             # Aggiungi le medie alle liste dell'epoca
             self.jaccard_epoch.append(avg_jaccard)
-            self.precision_epoch.append(avg_precision)
-            self.recall_epoch.append(avg_recall)
             self.f1score_epoch.append(avg_f1score)
             self.total_loss_epoch.append(avg_loss)
 
             # Pulisci i valori batch-wise dopo aver calcolato la media
             self.jaccard_step.clear()
-            self.precision_step.clear()
-            self.recall_step.clear()
             self.f1score_step.clear()
             self.total_loss_step.clear()
     
             # Stampa dei valori medi per debug
             print(f"\nVal Jaccard: {avg_jaccard}\n"
-                  f"Val Precision: {avg_precision}\n"
-                  f"Val Recall: {avg_recall}\n"
                   f"Val F1-Score: {avg_f1score}\n"
                   f"Val Loss: {avg_loss}\n")
-    
             self.free_memory()
+        '''
 
     def free_memory(self):
         if torch.cuda.is_available():
