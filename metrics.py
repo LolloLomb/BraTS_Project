@@ -12,85 +12,85 @@ class Metrics:
     @staticmethod
     def precision(pred_class, target_class, epsilon=1e-6):
         """
-        Calcola la Precision per una specifica classe nella segmentazione.
+        Calculates Precision for a specific class in segmentation.
         """
     
-        pred_class = (pred_class > 0.5).float()  # Binarizza la predizione
+        pred_class = (pred_class > 0.5).float()  # Binarize the prediction
         target_class = target_class.float()
         
-        # Calcolo del vero positivo e del positivo previsto
+        # Calculate true positive and predicted positive
         true_positive = (pred_class * target_class).sum()
         predicted_positive = pred_class.sum()
         
-        # Calcolo della precisione
+        # Calculate precision
         class_precision = (true_positive + epsilon) / (predicted_positive + epsilon)
         class_precision = class_precision.item()
         
-        return class_precision  # Restituisci la precisione
+        return class_precision  # Return precision
 
 
     @staticmethod
     def recall(pred_class, target_class, epsilon=1e-6):
         """
-        Calcola la Recall per una specifica classe nella segmentazione.
+        Calculates Recall for a specific class in segmentation.
         """
-        pred_class = (pred_class > 0.5).float()  # Binarizza la predizione
+        pred_class = (pred_class > 0.5).float()  # Binarize the prediction
         target_class = target_class.float()
         
-        # Calcolo del vero positivo e del positivo effettivo
+        # Calculate true positive and actual positive
         true_positive = (pred_class * target_class).sum()
         actual_positive = target_class.sum()
         
-        # Calcolo della recall
+        # Calculate recall
         class_recall = (true_positive + epsilon) / (actual_positive + epsilon)
         class_recall = class_recall.item()
         
-        return class_recall  # Restituisci la recall
+        return class_recall  # Return recall
 
     @staticmethod
     def f1_score(prediction, target, epsilon=1e-6):
         """
-        Calcola l'F1-Score per la segmentazione.
+        Calculates F1-Score for segmentation.
         """
         num_classes = prediction.shape[1]
             
         class_f1_scores = []
     
-        # Calcola precision e recall per ciascuna classe
+        # Calculate precision and recall for each class
         for class_idx in range(num_classes):
             pred_class = prediction[:, class_idx, ...]
             target_class = target[:, class_idx, ...]
     
-            # Calcola precision e recall per la classe corrente
+            # Calculate precision and recall for the current class
             precision_value = Metrics.precision(pred_class, target_class)
             recall_value = Metrics.recall(pred_class, target_class)
     
-            # Calcola F1-Score per la classe corrente
+            # Calculate F1-Score for the current class
             f1 = 2 * (precision_value * recall_value) / (precision_value + recall_value + epsilon)
     
-            # Applica il peso alla classe corrente (se necessario)
+            # Apply the weight to the current class (if needed)
             class_f1_scores.append(f1)
         
-        # Restituisci i punteggi F1 per ogni classe
+        # Return the F1 scores for each class
         return class_f1_scores
 
     @staticmethod
     def dice_loss(prediction, target, weights=lossWeights, epsilon=1e-6):
         """
-        Calcola la Dice Loss pesata
+        Calculates the weighted Dice Loss.
         """
-        # Inizializza la loss totale
+        # Initialize the total loss
         total_loss = 0.0
 
-        # Calcola la Dice Loss per ogni classe
-        for i in range(prediction.shape[1]):  # Itera su ciascuna classe
-            # Calcola l'intersezione tra predizione e target per la classe i
+        # Calculate Dice Loss for each class
+        for i in range(prediction.shape[1]):  # Iterate over each class
+            # Calculate the intersection between prediction and target for class i
             intersection = (prediction[:, i] * target[:, i]).sum()
     
-            # Calcola il coefficiente di Dice
+            # Calculate the Dice coefficient
             dice_coeff = (2. * intersection + epsilon) / (prediction[:, i].sum() + target[:, i].sum() + epsilon)
     
-            # Applica il peso se fornito
+            # Apply the weight if provided
             if weights is not None:
                 total_loss += weights[i] * (1 - dice_coeff)
             else:
@@ -101,25 +101,25 @@ class Metrics:
     @staticmethod
     def focal_loss(prediction, target, weights=None, alpha=1.0, gamma=2.0, epsilon=1e-6):
         """
-        Calcola la Focal Loss pesata.
+        Calculates the weighted Focal Loss.
         """
-        prediction = prediction.clamp(epsilon, 1 - epsilon)  # Clamping per stabilità numerica
-        target = target.float()  # Assicurati che il target sia in formato float
+        prediction = prediction.clamp(epsilon, 1 - epsilon)  # Clamping for numerical stability
+        target = target.float()  # Ensure the target is in float format
 
         total_focal_loss = 0.0
         
-        # Inizializza la Focal Loss totale
-        for i in range(prediction.shape[1]):  # Itera su ciascuna classe
-            p_t = prediction[:, i]  # Probabilità per la classe i
-            t = target[:, i]  # Target (one-hot) per la classe i
+        # Initialize the total Focal Loss
+        for i in range(prediction.shape[1]):  # Iterate over each class
+            p_t = prediction[:, i]  # Probability for class i
+            t = target[:, i]  # Target (one-hot) for class i
             
-            # Calcolo della Focal Loss per la classe i
-            focal_loss_value = -alpha * (1 - p_t) ** gamma * t * p_t.log()  # Focal loss per i positivi
-            focal_loss_value_neg = -(1 - alpha) * p_t ** gamma * (1 - t) * (1 - p_t).log()  # Per i negativi
+            # Calculate Focal Loss for class i
+            focal_loss_value = -alpha * (1 - p_t) ** gamma * t * p_t.log()  # Focal loss for positives
+            focal_loss_value_neg = -(1 - alpha) * p_t ** gamma * (1 - t) * (1 - p_t).log()  # For negatives
     
             focal_loss = focal_loss_value + focal_loss_value_neg
             
-            # Applica il peso se fornito
+            # Apply the weight if provided
             if weights is not None:
                 total_focal_loss += weights[i] * focal_loss.mean()
             else:
@@ -130,59 +130,59 @@ class Metrics:
     @staticmethod
     def combined_loss(prediction, target, weights=lossWeights):
         """
-        Combina Dice Loss e Focal Loss in una singola loss.
+        Combines Dice Loss and Focal Loss into a single loss.
         """
         dice = Metrics.dice_loss(prediction, target)
         focal = Metrics.focal_loss(prediction, target)
         
-        return 0.5 * dice + 0.5 * focal  # Combina le due perdite
+        return 0.5 * dice + 0.5 * focal  # Combine the two losses
 
     @staticmethod
     def hausdorff_distance(prediction, target):
         """
-        Calcola la Hausdorff Distance tra prediction e target
-        per ciascuna classe e per ciascun volume nel batch.
+        Calculates the Hausdorff Distance between prediction and target
+        for each class and for each volume in the batch.
         """
-        # Assicurati che prediction e target siano sulla GPU
-        device = prediction.device  # Ottieni il dispositivo delle predizioni
+        # Ensure prediction and target are on the GPU
+        device = prediction.device  # Get the device of the predictions
         batch_size, num_classes, d, h, w = prediction.shape
         
-        # Inizializza le distanze come infinito
+        # Initialize distances as infinity
         distances = torch.full((batch_size, num_classes), float('inf'), device=device)  
         
         for b in range(batch_size):
             for c in range(num_classes):
-                # Trova le coordinate dei voxel non zero
+                # Find coordinates of non-zero voxels
                 pred_coords = torch.nonzero(prediction[b, c]).to(device)  # (num_voxel, 3)
                 target_coords = torch.nonzero(target[b, c]).to(device)  # (num_voxel, 3)
     
-                # Debug per verificare le dimensioni delle coordinate
-                print(f'Batch {b}, Classe {c}: pred_coords shape = {pred_coords.shape}, target_coords shape = {target_coords.shape}')
+                # Debug to verify coordinate dimensions
+                print(f'Batch {b}, Class {c}: pred_coords shape = {pred_coords.shape}, target_coords shape = {target_coords.shape}')
                 
-                # Se non ci sono voxel per la classe c in predizione o target, skip
+                # If there are no voxels for class c in prediction or target, skip
                 if pred_coords.size(0) == 0 or target_coords.size(0) == 0:
                     print(f"No valid voxels for Batch {b}, Class {c}, keeping distance as infinity.")
-                    continue  # Lascia infinito se ci sono voxel non validi
+                    continue  # Leave distance as infinity if there are no valid voxels
     
-                # Calcola la Hausdorff Distance diretta e inversa usando numpy
-                pred_coords_np = pred_coords.cpu().numpy()  # Converti in numpy per scipy
+                # Calculate directed and inverse Hausdorff Distances using numpy
+                pred_coords_np = pred_coords.cpu().numpy()  # Convert to numpy for scipy
                 target_coords_np = target_coords.cpu().numpy()
     
-                # Calcola le distanze di Hausdorff
+                # Calculate Hausdorff distances
                 dist1 = directed_hausdorff(pred_coords_np, target_coords_np)[0]
                 dist2 = directed_hausdorff(target_coords_np, pred_coords_np)[0]
                 
-                # Prendi la distanza massima tra i due
+                # Take the maximum distance between the two
                 hausdorff_dist = max(dist1, dist2)
-                distances[b, c] = hausdorff_dist  # Assegna la distanza calcolata
+                distances[b, c] = hausdorff_dist  # Assign the calculated distance
                 
-        # Restituisci le distanze per batch e classe come un array sulla GPU
+        # Return distances for batch and class as an array on the GPU
         return distances
                 
     @staticmethod
     def dice_coefficient(prediction, target, epsilon=1e-6):
         """
-        Calcola il coefficiente di Dice.
+        Calculates the Dice coefficient.
         """
         intersection = (prediction * target).sum()
         return (2. * intersection + epsilon) / (prediction.sum() + target.sum() + epsilon)
@@ -191,9 +191,9 @@ class Metrics:
     @staticmethod
     def accuracy(prediction, target):
         """
-        Calcola l'accuratezza classica.
+        Calculates classic accuracy.
         """
-        preds = (prediction > 0.5).float()  # Applicazione di una soglia
+        preds = (prediction > 0.5).float()  # Apply a threshold
         correct = (preds == target).float().sum()
         return correct / target.numel()
     '''
@@ -203,27 +203,27 @@ class Metrics:
     def jaccard_index(prediction, target, weights=None, epsilon=1e-6):
         num_classes = prediction.shape[1]
         
-        # Se i pesi non sono specificati, assegna peso uguale a tutte le classi
+        # If weights are not specified, assign equal weight to all classes
         if weights is None:
             weights = [1.0] * num_classes
     
         class_jaccard_scores = []
     
-        # Calcolo dell'indice di Jaccard per ciascuna classe
+        # Calculate Jaccard index for each class
         for class_idx in range(num_classes):
             pred_class = prediction[:, class_idx, ...]
             target_class = target[:, class_idx, ...]
     
-            # Calcolo intersezione e unione
+            # Calculate intersection and union
             intersection = (pred_class * target_class).sum()
             union = pred_class.sum() + target_class.sum() - intersection
     
-            # Calcolo Jaccard per la classe corrente
+            # Calculate Jaccard for the current class
             jaccard = (intersection + epsilon) / (union + epsilon)
             jaccard = jaccard.item()
     
-            # Applica il peso alla classe corrente (se necessario)
+            # Apply the weight to the current class (if needed)
             class_jaccard_scores.append(jaccard * weights[class_idx])
     
-        # Restituisci i punteggi Jaccard per ogni classe
+        # Return the Jaccard scores for each class
         return class_jaccard_scores

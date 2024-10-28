@@ -1,6 +1,6 @@
 from dataset import BratsDataset                        # To instantiate the BratsDataset
 from torch.utils.data import DataLoader                 # To create a DataLoader for the neural network
-from check_train_loader import check_train_loader       # For debugging the train loader
+from checkTrainerLoader import check_train_loader       # For debugging the train loader
 import random
 import torch
 

@@ -1,6 +1,6 @@
 import glob                                             # To save paths in subdirectories
 import splitfolders                                     # To split paths between train and validation
-from crop_and_save import crop_and_save                 # To crop images and save them
+from new2024.cropAndSave import crop_and_save                 # To crop images and save them
 from sklearn.preprocessing import MinMaxScaler          # To impose which class we want to accept as input for crop_and_save
 
 def step_one():

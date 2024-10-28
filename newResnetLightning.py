@@ -26,8 +26,8 @@ class ResNetLightning(pl.LightningModule):
         self.f1score_step = []
         self.f1score_epoch = []
 
-        self.hausdorff_step = []
-        self.hausdorff_epoch = []
+        #self.hausdorff_step = []
+        #self.hausdorff_epoch = []
 
     def forward(self, x):
         return self.model(x)
@@ -95,31 +95,16 @@ class ResNetLightning(pl.LightningModule):
             self.f1score_epoch.append(current_f1score)
             
             print("Score: ", self.f1score_epoch)
-            self.jaccard_step.clear()
-            self.f1score_step.clear()
-            self.free_memory()
-        '''
-        if self.trainer.state.stage != "sanity_check":
-            avg_jaccard = sum(self.jaccard_step) / len(self.jaccard_step)
-            avg_f1score = sum(self.f1score_step) / len(self.f1score_step)
+
             avg_loss = sum(self.total_loss_step) / len(self.total_loss_step)
-    
-            # Aggiungi le medie alle liste dell'epoca
-            self.jaccard_epoch.append(avg_jaccard)
-            self.f1score_epoch.append(avg_f1score)
             self.total_loss_epoch.append(avg_loss)
 
-            # Pulisci i valori batch-wise dopo aver calcolato la media
+            print("Loss: ", self.total_loss_epoch)
+            
+            self.total_loss_step.clear()
             self.jaccard_step.clear()
             self.f1score_step.clear()
-            self.total_loss_step.clear()
-    
-            # Stampa dei valori medi per debug
-            print(f"\nVal Jaccard: {avg_jaccard}\n"
-                  f"Val F1-Score: {avg_f1score}\n"
-                  f"Val Loss: {avg_loss}\n")
             self.free_memory()
-        '''
 
     def free_memory(self):
         if torch.cuda.is_available():
