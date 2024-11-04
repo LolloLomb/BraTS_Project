@@ -99,7 +99,7 @@ class Metrics:
         return total_loss
 
     @staticmethod
-    def focal_loss(prediction, target, weights=None, alpha=1.0, gamma=2.0, epsilon=1e-6):
+    def focal_loss(prediction, target, weights=lossWeights, alpha=1, gamma=2.0, epsilon=1e-6):
         """
         Calculates the weighted Focal Loss.
         """
@@ -132,10 +132,10 @@ class Metrics:
         """
         Combines Dice Loss and Focal Loss into a single loss.
         """
-        dice = Metrics.dice_loss(prediction, target)
-        focal = Metrics.focal_loss(prediction, target)
+        dice = Metrics.dice_loss(prediction, target, weights)
+        focal = Metrics.focal_loss(prediction, target, weights)
         
-        return 0.5 * dice + 0.5 * focal  # Combine the two losses
+        return 0.4 * dice + 0.6 * focal  # Combine the two losses
 
     @staticmethod
     def hausdorff_distance(prediction, target):
@@ -180,12 +180,32 @@ class Metrics:
         return distances
                 
     @staticmethod
-    def dice_coefficient(prediction, target, epsilon=1e-6):
+    def dice_coefficient(prediction, target, weights=lossWeights, epsilon=1e-6):
         """
-        Calculates the Dice coefficient.
+        Calcola il coefficiente di Dice pesato.
         """
-        intersection = (prediction * target).sum()
-        return (2. * intersection + epsilon) / (prediction.sum() + target.sum() + epsilon)
+        num_classes = prediction.shape[1]
+
+        # Se i pesi non sono specificati, assegna un peso uguale a tutte le classi
+        if weights is None:
+            weights = [1.0] * num_classes
+
+        class_dice_scores = []
+
+        # Calcola il coefficiente di Dice per ciascuna classe
+        for class_idx in range(num_classes):
+            pred_class = prediction[:, class_idx, ...]
+            target_class = target[:, class_idx, ...]
+
+            # Calcola l'intersezione e la somma delle previsioni e dei target per la classe corrente
+            intersection = (pred_class * target_class).sum()
+            dice_score = (2. * intersection + epsilon) / (pred_class.sum() + target_class.sum() + epsilon)
+
+            # Applica il peso per la classe corrente
+            class_dice_scores.append(dice_score * weights[class_idx])
+
+        # Restituisce la somma dei coefficienti di Dice pesati per ciascuna classe
+        return sum(class_dice_scores) / sum(weights)
 
     '''
     @staticmethod
@@ -200,7 +220,7 @@ class Metrics:
 
     
     @staticmethod
-    def jaccard_index(prediction, target, weights=None, epsilon=1e-6):
+    def jaccard_index(prediction, target, weights=lossWeights, epsilon=1e-6):
         num_classes = prediction.shape[1]
         
         # If weights are not specified, assign equal weight to all classes

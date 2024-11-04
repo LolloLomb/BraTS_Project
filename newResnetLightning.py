@@ -26,6 +26,9 @@ class ResNetLightning(pl.LightningModule):
         self.f1score_step = []
         self.f1score_epoch = []
 
+        self.dice_score_step = []
+        self.dice_score_epoch = []
+
         #self.hausdorff_step = []
         #self.hausdorff_epoch = []
 
@@ -66,6 +69,7 @@ class ResNetLightning(pl.LightningModule):
             self.jaccard_step.append(jaccard)
             self.f1score_step.append(f1score)
             self.total_loss_step.append(total_loss)
+            self.dice_score_step.append(dice)
 
         # Log delle metriche
         #self.log('val_dice', dice, on_step=True, on_epoch=True, prog_bar=True)
@@ -81,6 +85,7 @@ class ResNetLightning(pl.LightningModule):
             print("\n\n")
             current_jaccards = []
             current_f1score = []
+            current_dice_score = []
             for i in range(self.out_channels):
                 s = sum(lst[i] for lst in self.jaccard_step)
                 avg = len(self.jaccard_step)
@@ -96,6 +101,14 @@ class ResNetLightning(pl.LightningModule):
             
             print("Score: ", self.f1score_epoch)
 
+            for i in range(self.out_channels):
+                s = sum(lst[i] for lst in self.dice_score_step)
+                avg = len(self.dice_score_step)
+                current_dice_score.append(s/avg)
+            self.dice_score_epoch.append(current_dice_score)
+            
+            print("Dice Coefficient: ", self.dice_score_epoch)
+
             avg_loss = sum(self.total_loss_step) / len(self.total_loss_step)
             self.total_loss_epoch.append(avg_loss)
 
@@ -104,6 +117,7 @@ class ResNetLightning(pl.LightningModule):
             self.total_loss_step.clear()
             self.jaccard_step.clear()
             self.f1score_step.clear()
+            self.dice_score_step.clear()
             self.free_memory()
 
     def free_memory(self):
