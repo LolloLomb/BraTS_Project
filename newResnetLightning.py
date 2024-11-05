@@ -85,7 +85,7 @@ class ResNetLightning(pl.LightningModule):
             print("\n\n")
             current_jaccards = []
             current_f1score = []
-            current_dice_score = []
+            current_dice = []
             for i in range(self.out_channels):
                 s = sum(lst[i] for lst in self.jaccard_step)
                 avg = len(self.jaccard_step)
@@ -104,15 +104,25 @@ class ResNetLightning(pl.LightningModule):
             for i in range(self.out_channels):
                 s = sum(lst[i] for lst in self.dice_score_step)
                 avg = len(self.dice_score_step)
-                current_dice_score.append(s/avg)
-            self.dice_score_epoch.append(current_dice_score)
+                current_dice.append(s/avg)
+            self.dice_score_epoch.append(current_dice)
             
             print("Dice Coefficient: ", self.dice_score_epoch)
 
-            avg_loss = sum(self.total_loss_step) / len(self.total_loss_step)
-            self.total_loss_epoch.append(avg_loss)
+            s = 0 # perchè devo estrarre .item(), non posso fare sum sulla lista
+            lung = len(self.total_loss_step)
+            for i in range(lung):
+                s += self.total_loss_step[i].item()
+            self.total_loss_epoch.append(s/lung)
 
             print("Loss: ", self.total_loss_epoch)
+
+            with open("valori.txt", "a") as f:
+                f.write("\nnew epoch\n")
+                f.write(f"Loss: {self.total_loss_epoch}\n")
+                f.write(f"Jaccards: {self.jaccard_epoch}\n")
+                f.write(f"F1-Score: {self.f1score_epoch}\n")
+                f.write(f"Dice Coeff: {self.dice_score_epoch}\n")
             
             self.total_loss_step.clear()
             self.jaccard_step.clear()

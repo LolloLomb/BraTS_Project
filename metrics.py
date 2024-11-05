@@ -202,10 +202,10 @@ class Metrics:
             dice_score = (2. * intersection + epsilon) / (pred_class.sum() + target_class.sum() + epsilon)
 
             # Applica il peso per la classe corrente
-            class_dice_scores.append(dice_score * weights[class_idx])
+            class_dice_scores.append(dice_score.item() * weights[class_idx])
 
         # Restituisce la somma dei coefficienti di Dice pesati per ciascuna classe
-        return sum(class_dice_scores) / sum(weights)
+        return class_dice_scores
 
     '''
     @staticmethod
