@@ -28,7 +28,7 @@ class ResNet(nn.Module):
         self.upResConv3 = ResConv(512 + 256, 256, 1, 1, dropout=0.2)
 
         self.upsample2 = Upsample(256, 256, 2, 2)
-        self.upResConv2 = ResConv(256 + 128, 1, 1, dropout=0.2)
+        self.upResConv2 = ResConv(256 + 128, 128, 1, 1, dropout=0.2)
 
         self.upsample1 = Upsample(128, 128, 2, 2)
         self.upResConv1 = ResConv(128 + 64, 64, 1, 1, dropout=0.2)
@@ -69,7 +69,7 @@ class ResNet(nn.Module):
 
         x9 = self.upsample1(x9)
         x10 = torch.cat([x9, x2], dim=1)
-        x11 = self.upResConv1(x9)
+        x11 = self.upResConv1(x10)
 
         x11 = self.upsample0(x11)
         x12 = torch.cat([x11, x1], dim=1)
@@ -80,9 +80,9 @@ class ResNet(nn.Module):
         x15 = self.upResConvFinal(x14)
 
 
-        x14 = self.outputLayer(x14)
+        x15 = self.outputLayer(x15)
 
-        probabilities = torch.softmax(x14, dim=1)
+        probabilities = torch.softmax(x15, dim=1)
 
         return probabilities
 
